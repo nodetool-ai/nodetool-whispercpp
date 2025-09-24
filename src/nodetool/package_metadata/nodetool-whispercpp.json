@@ -1,7 +1,7 @@
 {
   "name": "nodetool-whispercpp",
   "description": "Whisper.cpp nodes for Nodetool",
-  "version": "0.1.0",
+  "version": "0.6.0",
   "authors": [
     "Matthias Georgi <matti.georgi@gmail.com>"
   ],
@@ -10,8 +10,8 @@
     {
       "title": "Whisper Cpp",
       "description": "Transcribe an audio asset using whispercpp (whisper.cpp bindings) and stream strings.\n    whisper, whispercpp, asr, speech-to-text, streaming, huggingface-cache\n\n    - Model file is loaded from the local Hugging Face cache (repo + filename)\n    - Emits streaming text deltas on `chunk` and final transcript on `text`",
-      "namespace": "lib.whispercpp",
-      "node_type": "lib.whispercpp.WhisperCpp",
+      "namespace": "whispercpp.whispercpp",
+      "node_type": "whispercpp.whispercpp.WhisperCpp",
       "properties": [
         {
           "name": "model",
@@ -52,7 +52,7 @@
               "large-v3-turbo-q5_0",
               "large-v3-turbo-q8_0"
             ],
-            "type_name": "nodetool.nodes.lib.whispercpp.Model"
+            "type_name": "nodetool.nodes.whispercpp.whispercpp.Model"
           },
           "default": "tiny.en",
           "title": "Model",
@@ -149,7 +149,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -173,7 +173,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -197,7 +197,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -221,7 +221,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -245,7 +245,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -269,7 +269,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -293,7 +293,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -317,7 +317,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -341,7 +341,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -365,7 +365,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -389,7 +389,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -413,7 +413,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -437,7 +437,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -461,7 +461,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -485,7 +485,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -509,7 +509,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -533,7 +533,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -557,7 +557,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -581,7 +581,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -605,7 +605,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -629,7 +629,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -653,7 +653,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -677,7 +677,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -701,7 +701,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -725,7 +725,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -749,7 +749,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -773,7 +773,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -797,7 +797,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -821,7 +821,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -845,7 +845,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -869,7 +869,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -893,7 +893,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         },
         {
@@ -917,7 +917,7 @@
           ],
           "has_model_index": false,
           "downloads": 0,
-          "likes": 1123,
+          "likes": 1124,
           "trending_score": null
         }
       ],
