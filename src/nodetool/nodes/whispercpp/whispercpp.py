@@ -15,7 +15,7 @@ from nodetool.workflows.processing_context import ProcessingContext
 from nodetool.workflows.io import NodeInputs, NodeOutputs
 
 # Optional: used for streaming string chunks
-from nodetool.chat.providers import Chunk
+from nodetool.providers import Chunk
 
 # New library: pywhispercpp
 from pywhispercpp import constants as pwconstants
