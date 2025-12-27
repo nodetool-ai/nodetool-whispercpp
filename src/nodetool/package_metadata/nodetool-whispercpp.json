@@ -1,7 +1,7 @@
 {
   "name": "nodetool-whispercpp",
   "description": "Whisper.cpp nodes for Nodetool",
-  "version": "0.6.2-rc.14",
+  "version": "0.6.2-rc.15",
   "authors": [
     "Matthias Georgi <matti.georgi@gmail.com>"
   ],
@@ -85,7 +85,8 @@
             "type": "audio",
             "uri": "",
             "asset_id": null,
-            "data": null
+            "data": null,
+            "metadata": null
           },
           "title": "Audio",
           "description": "Audio to transcribe"
