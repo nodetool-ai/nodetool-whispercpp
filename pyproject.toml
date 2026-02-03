@@ -28,7 +28,6 @@ allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/nodetool"]
-artifacts = [
-    "src/nodetool/package_metadata/nodetool-whispercpp.json",
-    "package_metadata/nodetool-whispercpp.json",
+include = [
+    "src/nodetool/package_metadata/*.json",
 ]
