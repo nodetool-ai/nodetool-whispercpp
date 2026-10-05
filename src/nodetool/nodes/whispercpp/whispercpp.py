@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-import base64
 from enum import Enum
+from typing import Any, AsyncGenerator
 
 import numpy as np
 from pydantic import Field
@@ -12,34 +12,16 @@ from nodetool.config.logging_config import get_logger
 from nodetool.metadata.types import AudioRef, HuggingFaceModel
 from nodetool.workflows.base_node import BaseNode
 from nodetool.workflows.processing_context import ProcessingContext
-from nodetool.workflows.io import NodeInputs, NodeOutputs
 
 # Optional: used for streaming string chunks
 from nodetool.providers import Chunk
 
 # New library: pywhispercpp
-from pywhispercpp import constants as pwconstants
 from pywhispercpp.model import Model as PWModel, Segment
 
 log = get_logger(__name__)
 
 REPO_ID = "ggerganov/whisper.cpp"
-
-
-def compute_incremental_suffix(previous: str, current: str) -> str:
-    """Return the part of ``current`` that ``previous`` does not already end with.
-
-    Streaming transcription re-transcribes an overlapping audio tail, so the
-    start of each window's text can repeat the end of the text emitted so far.
-    """
-    if not previous:
-        return current
-    if current.startswith(previous):
-        return current[len(previous) :]
-    for overlap in range(min(len(previous), len(current)), 0, -1):
-        if previous.endswith(current[:overlap]):
-            return current[overlap:]
-    return current
 
 
 def _resolve_model_path(model_name: str) -> str:
@@ -65,7 +47,8 @@ class WhisperCpp(BaseNode):
     whisper, whispercpp, asr, speech-to-text, streaming, huggingface-cache
 
     - Model file is loaded from the local Hugging Face cache (repo + filename)
-    - Emits streaming text deltas on `chunk` and final transcript on `text`
+    - Transcribes the audio in windows of `length_ms`
+    - Emits each window's text on `chunk` and the full transcript on `text`
     """
 
     class Model(str, Enum):
@@ -120,11 +103,14 @@ class WhisperCpp(BaseNode):
     # Decoding parameters (subset, expanded as needed)
     n_threads: int = Field(default=4, description="Decoder CPU threads")
     length_ms: int = Field(
-        default=5000, description="Chunk length in milliseconds for pseudo-streaming"
+        default=5000, description="Window length in milliseconds for streaming output"
     )
 
     audio: AudioRef = Field(default=AudioRef(), description="Audio to transcribe")
-    chunk: Chunk = Field(default=Chunk(), description="Chunk to transcribe")
+    chunk: Chunk = Field(
+        default=Chunk(),
+        description="Live audio chunks are not supported yet; connect an audio asset instead",
+    )
 
     @classmethod
     def is_cacheable(cls) -> bool:
@@ -136,7 +122,9 @@ class WhisperCpp(BaseNode):
 
     @classmethod
     def is_streaming_input(cls) -> bool:
-        return True
+        # The Python bridge delivers one snapshot of the inputs per execution,
+        # so a live chunk stream cannot reach this node.
+        return False
 
     @classmethod
     def return_type(cls):
@@ -148,7 +136,7 @@ class WhisperCpp(BaseNode):
             "probability": float,
         }
 
-    async def _load_whisper(self) -> PWModel:
+    def _load_whisper(self) -> PWModel:
         # Resolve local path from HF cache and instantiate pywhispercpp model
         model_path = _resolve_model_path(self.model.value)
         return PWModel(
@@ -180,128 +168,45 @@ class WhisperCpp(BaseNode):
         arr = (pcm.astype(np.float32) / 32768.0).flatten()
         return arr, 16000
 
-    async def run(
-        self, context: ProcessingContext, inputs: NodeInputs, outputs: NodeOutputs
-    ) -> None:
-        model = await self._load_whisper()
-
-        # Queues for streaming audio samples and decoded text
-        input_q: asyncio.Queue[np.ndarray] = asyncio.Queue(maxsize=32)
-        done_flag = {"done": False}
-
-        async def producer() -> None:
-            # Accept either streaming audio chunks or a single AudioRef
-            async for handle, item in inputs.any():
-                if handle == "chunk" and isinstance(item, Chunk):
-                    if item.content_type == "audio" and item.content:
-                        raw: bytes | None = None
-                        if isinstance(item.content, str):
-                            try:
-                                raw = base64.b64decode(item.content)
-                            except Exception:
-                                raw = None
-                        elif isinstance(item.content, (bytes, bytearray)):
-                            raw = bytes(item.content)
-                        if raw:
-                            # Assume PCM16 little-endian; convert to float32 mono 16k
-                            pcm16 = np.frombuffer(raw, dtype=np.int16)
-                            arr = (pcm16.astype(np.float32) / 32768.0).flatten()
-                            await input_q.put(arr)
-                    if getattr(item, "done", False):
-                        # Segment boundary hint; push empty marker
-                        await input_q.put(np.array([], dtype=np.float32))
-                elif handle == "audio" and isinstance(item, AudioRef):
-                    arr, _sr = await self._audio_to_float32(context, item)
-                    # Push full audio in fixed-size chunks into the queue
-                    chunk_len = max(
-                        1,
-                        int(self.length_ms * pwconstants.WHISPER_SAMPLE_RATE / 1000),
-                    )
-                    total = arr.shape[0]
-                    pos = 0
-                    while pos < total:
-                        await input_q.put(arr[pos : min(pos + chunk_len, total)])
-                        pos += chunk_len
-                    # Signal boundary to force decode of any remaining buffer
-                    await input_q.put(np.array([], dtype=np.float32))
-            done_flag["done"] = True
-
-        async def consumer() -> None:
-            buffer = np.array([], dtype=np.float32)
-            min_samples = max(
-                1, int(self.length_ms * pwconstants.WHISPER_SAMPLE_RATE / 1000)
+    async def gen_process(
+        self, context: ProcessingContext
+    ) -> AsyncGenerator[dict[str, Any], None]:
+        if self.chunk.content:
+            raise ValueError(
+                "WhisperCpp does not support live audio chunks yet; connect an audio asset to `audio`"
             )
-            full_text = ""
+        samples, sample_rate = await self._audio_to_float32(context, self.audio)
 
-            loop = asyncio.get_running_loop()
+        loop = asyncio.get_running_loop()
+        model = await loop.run_in_executor(None, self._load_whisper)
 
-            while not (done_flag["done"] and input_q.empty()):
-                try:
-                    chunk = await asyncio.wait_for(input_q.get(), timeout=0.1)
-                except asyncio.TimeoutError:
-                    chunk = None  # type: ignore
+        def transcribe(window: np.ndarray) -> list[Segment]:
+            return model.transcribe(window, extract_probability=True)
 
-                if chunk is not None:
-                    if chunk.size == 0:
-                        # explicit boundary: force decode if we have content
-                        if buffer.size > 0:
-                            arr = buffer.astype(np.float32, copy=True)
-                            buffer = np.array([], dtype=np.float32)
-                        else:
-                            arr = None
-                    else:
-                        buffer = (
-                            np.concatenate([buffer, chunk]) if buffer.size else chunk
-                        )
-                        arr = buffer if buffer.size >= min_samples else None
-                        if arr is not None:
-                            # keep small tail to overlap a bit (simple VAD-ish)
-                            tail_keep = min_samples // 4
-                            buffer = (
-                                buffer[-tail_keep:]
-                                if buffer.size > tail_keep
-                                else np.array([], dtype=np.float32)
-                            )
-                    if arr is None:
-                        await asyncio.sleep(0)
-                        continue
+        window_len = max(1, self.length_ms * sample_rate // 1000)
+        texts: list[str] = []
+        for start in range(0, samples.shape[0], window_len):
+            window = samples[start : start + window_len]
+            try:
+                segments = await loop.run_in_executor(None, transcribe, window)
+            except Exception as e:
+                raise RuntimeError(
+                    f"Whisper (pywhispercpp) transcription failed: {e}"
+                ) from e
 
-                    # Blocking transcription in executor
-                    def _do_transcribe(a: np.ndarray) -> list[Segment]:
-                        return model.transcribe(a, n_processors=self.n_threads)
+            text = "".join(segment.text for segment in segments)
+            if text:
+                texts.append(text)
+                yield {"chunk": Chunk(content=text, done=False)}
+            for segment in segments:
+                yield {
+                    "t0": segment.t0,
+                    "t1": segment.t1,
+                    "probability": segment.probability,
+                }
 
-                    try:
-                        result = await loop.run_in_executor(None, _do_transcribe, arr)
-                    except Exception as e:
-                        raise RuntimeError(
-                            f"Whisper (pywhispercpp) transcription failed: {e}"
-                        ) from e
-
-                    # Emit only the non-overlapping delta of concatenated segments
-                    joined_text = "".join(seg.text for seg in result)
-                    delta_text = compute_incremental_suffix(full_text, joined_text)
-                    if delta_text:
-                        await outputs.emit(
-                            "chunk", Chunk(content=delta_text, done=False)
-                        )
-                        full_text = full_text + delta_text
-
-                    # Still emit timing/probability for each segment
-                    for segment in result:
-                        await outputs.emit("t0", segment.t0)
-                        await outputs.emit("t1", segment.t1)
-                        await outputs.emit("probability", segment.probability)
-
-                await asyncio.sleep(0)
-
-            # Flush
-            await outputs.emit("chunk", Chunk(content="", done=True))
-            final_text = full_text.strip()
-            if final_text:
-                await outputs.emit("text", final_text)
-            outputs.complete("text")
-
-        await asyncio.gather(producer(), consumer())
+        yield {"chunk": Chunk(content="", done=True)}
+        yield {"text": "".join(texts).strip()}
 
     @classmethod
     def get_recommended_models(cls) -> list[HuggingFaceModel]:
