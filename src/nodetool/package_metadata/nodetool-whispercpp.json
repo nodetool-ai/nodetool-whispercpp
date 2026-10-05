@@ -13,7 +13,7 @@
         "audio",
         "chunk"
       ],
-      "description": "Transcribe an audio asset using whispercpp (whisper.cpp bindings) and stream strings.\n    whisper, whispercpp, asr, speech-to-text, streaming, huggingface-cache\n\n    - Model file is loaded from the local Hugging Face cache (repo + filename)\n    - Emits streaming text deltas on `chunk` and final transcript on `text`",
+      "description": "Transcribe an audio asset using whispercpp (whisper.cpp bindings) and stream strings.\n    whisper, whispercpp, asr, speech-to-text, streaming, huggingface-cache\n\n    - Model file is loaded from the local Hugging Face cache (repo + filename)\n    - Transcribes the audio in windows of `length_ms`\n    - Emits each window's text on `chunk` and the full transcript on `text`",
       "inline_fields": [
         "model",
         "n_threads",
@@ -115,7 +115,7 @@
         },
         {
           "default": 5000,
-          "description": "Chunk length in milliseconds for pseudo-streaming",
+          "description": "Window length in milliseconds for streaming output",
           "name": "length_ms",
           "title": "Length Ms",
           "type": {
@@ -149,7 +149,7 @@
             "type": "chunk",
             "workflow_id": null
           },
-          "description": "Chunk to transcribe",
+          "description": "Live audio chunks are not supported yet; connect an audio asset instead",
           "name": "chunk",
           "title": "Chunk",
           "type": {
