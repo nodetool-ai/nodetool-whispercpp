@@ -25,8 +25,21 @@ log = get_logger(__name__)
 
 REPO_ID = "ggerganov/whisper.cpp"
 
-# Text utils
-from nodetool.nodes.lib.text_utils import compute_incremental_suffix
+
+def compute_incremental_suffix(previous: str, current: str) -> str:
+    """Return the part of ``current`` that ``previous`` does not already end with.
+
+    Streaming transcription re-transcribes an overlapping audio tail, so the
+    start of each window's text can repeat the end of the text emitted so far.
+    """
+    if not previous:
+        return current
+    if current.startswith(previous):
+        return current[len(previous) :]
+    for overlap in range(min(len(previous), len(current)), 0, -1):
+        if previous.endswith(current[:overlap]):
+            return current[overlap:]
+    return current
 
 
 def _resolve_model_path(model_name: str) -> str:
